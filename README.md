@@ -198,7 +198,7 @@ $$
 - **95% Confidence Interval**:
 
 $$
-\text{CI}_{95\%} = \left[\max(0, \; \hat{y} - 1.96\sigma_{\text{total}}), \quad \hat{y} + 1.96\sigma_{\text{total}}\right]
+\text{CI}_{95\%} = \left[ \max(0, \, \hat{y} - 1.96\sigma_{\text{total}}), \quad \hat{y} + 1.96\sigma_{\text{total}} \right]
 $$
 
 - **Herfindahl-Hirschman Diversification Index**:
