@@ -195,12 +195,6 @@ $$
 \sigma_{\text{total}} = \sqrt{C \cdot \sigma_{\text{rev}}^2}
 $$
 
-- **95% Confidence Interval**:
-
-$$
-\text{CI}_{95\%} = \left[ \max(0, \, \hat{y} - 1.96\sigma_{\text{total}}), \quad \hat{y} + 1.96\sigma_{\text{total}} \right]
-$$
-
 - **Herfindahl-Hirschman Diversification Index**:
 
 $$
