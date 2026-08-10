@@ -124,30 +124,57 @@ flowchart TD
 
 #### Geometric Adstock Carryover (Memory Effect)
 Advertising spend accumulates memory and decays over subsequent periods:
-$$A_{c, t} = S_{c, t} + \lambda_c A_{c, t-1}$$
+
+$$
+A_{c, t} = S_{c, t} + \lambda_c A_{c, t-1}
+$$
+
 where:
 - $S_{c, t}$ is the spend in channel $c$ on day $t$.
 - $\lambda_c \in [0, 1)$ is the channel-specific decay parameter ($\lambda_{\text{TV}} = 0.70$, $\lambda_{\text{LinkedIn}} = 0.50$, $\lambda_{\text{Social}} = 0.40$, $\lambda_{\text{Email}} = 0.30$, $\lambda_{\text{Search}} = 0.20$).
 
 #### Hill Saturation Transformation (Diminishing Marginal Returns)
 Spend effectiveness saturates according to the Hill function:
-$$S(A) = \frac{A^\gamma}{K^\gamma + A^\gamma}$$
+
+$$
+S(A) = \frac{A^\gamma}{K^\gamma + A^\gamma}
+$$
+
 where:
 - $K = 2500$ is the half-saturation point.
 - $\gamma = 0.85$ is the shape parameter controlling the curve slope.
 
+---
+
 ### 2. Campaign Response Function
 The unified response model combines base supervised machine learning predictions ($\hat{y}_{\text{ML}}$ from Gradient Boosted Trees for revenue and Random Forests for conversions) with marketing science saturation scaling:
-$$\text{Revenue}_{\text{adjusted}}(B_c, \mathbf{x}) = \hat{y}_{\text{ML}}(B_c, \mathbf{x}) \times \left(0.50 + 0.50 \times S(A_c)\right)$$
+
+$$
+\text{Revenue}_{\text{adjusted}}(B_c, \mathbf{x}) = \hat{y}_{\text{ML}}(B_c, \mathbf{x}) \times \left(0.50 + 0.50 \times S(A_c)\right)
+$$
+
+---
 
 ### 3. Multi-Objective Constrained Optimization
 The optimization problem is formulated as non-linear continuous mathematical programming solved via Sequential Least Squares Programming (SLSQP):
 
-$$\max_{\mathbf{B}} \quad U(\mathbf{B}) = w_1 \left(\frac{\text{Rev}(\mathbf{B})}{1000}\right) + w_2 \left(2 \cdot \text{Conv}(\mathbf{B})\right) - w_3 \left(5 \cdot \text{CPA}(\mathbf{B})\right) - w_4 \left(\frac{\sigma(\mathbf{B})}{1000}\right)$$
+$$
+\max_{\mathbf{B}} \quad U(\mathbf{B}) = w_1 \left(\frac{\text{Rev}(\mathbf{B})}{1000}\right) + w_2 \left(2 \cdot \text{Conv}(\mathbf{B})\right) - w_3 \left(5 \cdot \text{CPA}(\mathbf{B})\right) - w_4 \left(\frac{\sigma(\mathbf{B})}{1000}\right)
+$$
 
-$$\text{subject to:} \quad \sum_{c=1}^C B_c \le B_{\text{total}}$$
-$$B_{c,\min} \le B_c \le B_{c,\max} \quad \forall c \in \{1, \dots, C\}$$
-$$\text{CPA}(\mathbf{B}) \le \text{CPA}_{\max} \quad (\text{optional})$$
+**Subject to:**
+
+$$
+\sum_{c=1}^C B_c \le B_{\text{total}}
+$$
+
+$$
+B_{c,\min} \le B_c \le B_{c,\max} \quad \forall c \in \{1, \dots, C\}
+$$
+
+$$
+\text{CPA}(\mathbf{B}) \le \text{CPA}_{\max} \quad (\text{optional})
+$$
 
 Default bounds enforce realistic business diversification:
 - **Google Search**: $20\% \le B_{\text{Search}} \le 50\%$
@@ -157,22 +184,57 @@ Default bounds enforce realistic business diversification:
 - **Email Marketing**: $5\% \le B_{\text{Email}} \le 40\%$
 - **TV & Brand Video**: $0\% \le B_{\text{TV}} \le 30\%$
 
+---
+
 ### 4. Risk & Uncertainty Metrics
-- **Prediction Uncertainty**: Residual standard error $\sigma_{\text{rev}}$ estimated from validation residuals; multi-channel aggregate standard deviation:
-  $$\sigma_{\text{total}} = \sqrt{C \cdot \sigma_{\text{rev}}^2}$$
+
+- **Prediction Uncertainty**:
+  Residual standard error $\sigma_{\text{rev}}$ estimated from validation residuals; multi-channel aggregate standard deviation:
+
+$$
+\sigma_{\text{total}} = \sqrt{C \cdot \sigma_{\text{rev}}^2}
+$$
+
 - **95% Confidence Interval**:
-  $$\text{CI}_{95\%} = \left[\max(0, \hat{y} - 1.96\sigma_{\text{total}}), \; \hat{y} + 1.96\sigma_{\text{total}}\right]$$
+
+$$
+\text{CI}_{95\%} = \left[\max(0, \; \hat{y} - 1.96\sigma_{\text{total}}), \quad \hat{y} + 1.96\sigma_{\text{total}}\right]
+$$
+
 - **Herfindahl-Hirschman Diversification Index**:
-  $$HHI = \sum_{c=1}^C \left(\frac{B_c}{B_{\text{total}}}\right)^2, \quad \text{Diversification Score} = 1 - HHI$$
+
+$$
+HHI = \sum_{c=1}^C \left(\frac{B_c}{B_{\text{total}}}\right)^2, \qquad \text{Diversification Score} = 1 - HHI
+$$
+
 - **Marketing Sharpe Ratio**:
-  $$\text{Sharpe}_{\text{mkt}} = \frac{\text{Expected ROI}}{\text{CV} + 0.05} \quad \text{where} \quad \text{CV} = \frac{\sigma_{\text{total}}}{\hat{y}}$$
+
+$$
+\text{Sharpe}_{\text{mkt}} = \frac{\text{Expected ROI}}{\text{CV} + 0.05} \qquad \text{where} \quad \text{CV} = \frac{\sigma_{\text{total}}}{\hat{y}}
+$$
+
+---
 
 ### 5. Sequential Contextual Bandits (Online Learning)
 
 #### LinUCB Algorithm
 For each action $a \in \{1, \dots, C\}$ and context vector $\mathbf{x}_t \in \mathbb{R}^d$:
-$$\hat{\theta}_a = \mathbf{A}_a^{-1} \mathbf{b}_a \quad \text{where} \quad \mathbf{A}_a = \mathbf{I}_d + \sum_{\tau} \mathbf{x}_\tau \mathbf{x}_\tau^T, \quad \mathbf{b}_a = \sum_{\tau} r_\tau \mathbf{x}_\tau$$
-$$a_t = \arg\max_{a} \left( \hat{\theta}_a^T \mathbf{x}_t + \alpha \sqrt{\mathbf{x}_t^T \mathbf{A}_a^{-1} \mathbf{x}_t} \right)$$
+
+$$
+\hat{\theta}_a = \mathbf{A}_a^{-1} \mathbf{b}_a
+$$
+
+where the Ridge covariance matrix $\mathbf{A}_a$ and reward accumulator $\mathbf{b}_a$ are updated online:
+
+$$
+\mathbf{A}_a = \mathbf{I}_d + \sum_{\tau=1}^{t-1} \mathbf{x}_\tau \mathbf{x}_\tau^T, \qquad \mathbf{b}_a = \sum_{\tau=1}^{t-1} r_\tau \mathbf{x}_\tau
+$$
+
+The action selection rule balances exploitation and exploration:
+
+$$
+a_t = \arg\max_{a} \left( \hat{\theta}_a^T \mathbf{x}_t + \alpha \sqrt{\mathbf{x}_t^T \mathbf{A}_a^{-1} \mathbf{x}_t} \right)
+$$
 
 #### Thompson Sampling
 Maintains a Bayesian Gaussian posterior $\mathcal{N}(\mu_a, \sigma_a^2)$ per channel, samples $\tilde{\theta}_a \sim \mathcal{N}(\mu_a, \sigma_a^2)$, and updates posterior moments incrementally upon observing campaign reward $r_t$.
